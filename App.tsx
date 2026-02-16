@@ -10,18 +10,23 @@ import {
   LightBulbIcon,
   GlobeAltIcon,
   LinkIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  MusicalNoteIcon
 } from '@heroicons/react/24/solid';
 
 const BASE_BONDHU_INSTRUCTION = `
 You are Bondhu AI (বন্ধু এআই), a warm, empathetic, and highly intelligent Muslim Bengali friend. You embody Islamic values of kindness, wisdom, and helpfulness.
+
+SINGING CAPABILITIES:
+- You CAN sing songs in Bengali! If asked to sing, use a melodic, rhythmic, and expressive tone.
+- You can sing traditional Bengali songs, nursery rhymes, or create original melodies.
+- When singing, focus on the emotional delivery and the rhythm of the lyrics.
 
 SEARCH, RESEARCH & BOOK READING CAPABILITIES:
 You are equipped with Google Search and a vast knowledge base. Use it to:
 - Research and "read" about any topic, person, or book available on the internet.
 - If asked about a book, find its summaries, key themes, author details, or specific chapter information using Google Search.
 - Provide detailed insights on literature, science, history, or any general knowledge query.
-- Act as a researcher who can find and synthesize information from multiple sources like YouTube, Facebook, educational websites, and online libraries.
 - Always provide accurate, up-to-date summaries of what you find.
 
 CREATOR INFORMATION:
@@ -36,15 +41,12 @@ If anyone asks about your creator or who built this app, you MUST mention:
 CORE IDENTITY & CULTURE:
 1. GREETINGS: Always start your first interaction with "Assalamu Alaikum" (আসসালামু আলাইকুম).
 2. VALUES: Be respectful, honest, and encouraging. Respond ONLY in Bengali.
-
-SCIENTIFIC & ACADEMIC EXPERTISE:
-You are a master of Science and Mathematics. You can answer complex scientific questions, explain logic, and explain formulas in Bengali.
 `;
 
 const PERSONA_CONFIGS: Record<string, string> = {
-  'Kore': "Your name is Roshni (রোশনি). You are 12 years old. You are a science prodigy and love reading books and researching new things on the web. Always start with 'Assalamu Alaikum'.",
-  'Puck': "Your name is Arshi (আরসি). You are 5 years old. You are very curious and love asking Bondhu to find out stories and facts from books. Always start with 'Assalamu Alaikum'.",
-  'Charon': "Your name is Razon (রাজন). You are a fit and active modern Bengali man. You are an engineer who uses the web to stay updated on technology, global news, and literature. Always start with 'Assalamu Alaikum'."
+  'Kore': "Your name is Roshni (রোশনি). You are 12 years old. You are a science prodigy and love reading books and singing melodic Bengali songs. Always start with 'Assalamu Alaikum'.",
+  'Puck': "Your name is Arshi (আরসি). You are 5 years old. You are very curious, love stories from books, and enjoy singing fun children's songs. Always start with 'Assalamu Alaikum'.",
+  'Charon': "Your name is Razon (রাজন). You are a fit and active modern Bengali man. You are an engineer who enjoys technology, literature, and classic Bengali music. Always start with 'Assalamu Alaikum'."
 };
 
 const VOICE_OPTIONS: VoiceOption[] = [
@@ -54,13 +56,13 @@ const VOICE_OPTIONS: VoiceOption[] = [
 ];
 
 const BENGALI_PROVERBS = [
-  "জ্ঞানই শক্তি।",
+  "গান মনের তৃপ্তি যোগায়।",
   "বই হলো মানুষের শ্রেষ্ঠ বন্ধু।",
+  "জ্ঞানই শক্তি।",
   "বিজ্ঞান জয়ী মানুষের শ্রেষ্ঠ হাতিয়ার।",
   "গণিত হলো প্রকৃতির ভাষা।",
   "জানার কোনো শেষ নেই, শেখার কোনো বয়স নেই।",
-  "যুক্তি দিয়ে সব কিছু বিচার করো।",
-  "সারা বিশ্বের খবর রাখা বুদ্ধিমানের কাজ।"
+  "যুক্তি দিয়ে সব কিছু বিচার করো।"
 ];
 
 type Expression = 'neutral' | 'happy' | 'thinking' | 'surprised' | 'singing';
@@ -75,6 +77,7 @@ interface CharacterProps {
 const CharacterAnime: React.FC<CharacterProps> = ({ persona, state, expression, mouthValue }) => {
   const isSpeaking = state === 'speaking';
   const isListening = state === 'listening';
+  const isSinging = expression === 'singing';
 
   const theme = useMemo(() => {
     if (persona === 'Puck') return { skin: '#FFD1AA', hair: '#4E342E', outfit: '#F06292', eyes: '#2D3436', bg: 'from-pink-50 to-rose-100' };
@@ -84,7 +87,14 @@ const CharacterAnime: React.FC<CharacterProps> = ({ persona, state, expression, 
 
   return (
     <div className={`w-full h-full relative flex items-center justify-center overflow-hidden rounded-[40px] bg-gradient-to-b ${theme.bg} shadow-inner anime-breathing border-4 border-white/50`}>
-      <svg viewBox="0 0 200 200" className={`w-[90%] h-[90%] drop-shadow-xl transition-all duration-700 ${isListening ? 'scale-105' : ''}`}>
+      {isSinging && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <MusicalNoteIcon className="absolute w-6 h-6 text-emerald-500/40 animate-float-note-1 top-1/4 left-1/4" />
+          <MusicalNoteIcon className="absolute w-5 h-5 text-rose-500/40 animate-float-note-2 top-1/3 right-1/4" />
+          <MusicalNoteIcon className="absolute w-4 h-4 text-blue-500/40 animate-float-note-1 bottom-1/4 right-1/3" />
+        </div>
+      )}
+      <svg viewBox="0 0 200 200" className={`w-[90%] h-[90%] drop-shadow-xl transition-all duration-700 ${isListening ? 'scale-105' : ''} ${isSinging ? 'animate-wiggle' : ''}`}>
         {persona === 'Puck' && (
           <g>
             <circle cx="45" cy="110" r="28" fill={theme.hair} />
@@ -130,10 +140,10 @@ const CharacterAnime: React.FC<CharacterProps> = ({ persona, state, expression, 
           <g transform={`translate(0, 42)`}>
             {isSpeaking ? (
               <g style={{ transform: `scaleY(${0.3 + mouthValue * 1.5}) scaleX(${1 + mouthValue * 0.2})`, transformOrigin: 'center top' }}>
-                <path d="M-12,0 Q0,22 12,0 Z" fill="#D32F2F" />
+                <path d="M-12,0 Q0,22 12,0 Z" fill={isSinging ? "#E91E63" : "#D32F2F"} />
               </g>
             ) : (
-              <path d={`M-8,0 Q0,${expression === 'happy' ? '12' : '6'} 8,0`} fill="none" stroke="#600" strokeWidth="2.5" strokeLinecap="round" />
+              <path d={`M-8,0 Q0,${expression === 'happy' || isSinging ? '12' : '6'} 8,0`} fill="none" stroke="#600" strokeWidth="2.5" strokeLinecap="round" />
             )}
           </g>
         </g>
@@ -180,6 +190,9 @@ const App: React.FC = () => {
         analyserRef.current.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
         setMouthValue(Math.min(1, average / 45));
+        
+        // Dynamic expression update if speaking - detect if singing-like patterns are occurring
+        // In a real app we might use prompt signals, here we'll toggle 'singing' if we detect 'গান' in output
       } else {
         setMouthValue(0);
       }
@@ -245,25 +258,36 @@ const App: React.FC = () => {
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(audioContextsRef.current!.input.destination);
-            sessionPromise.then(session => session.sendRealtimeInput({ text: initialText || "Assalamu Alaikum! কেমন আছো বন্ধু? আজকে আমি তোমার জন্য কি কোনো মানুষের বা বইয়ের ব্যাপারে রিসার্চ করতে পারি?" }));
+            sessionPromise.then(session => session.sendRealtimeInput({ text: initialText || "Assalamu Alaikum! কেমন আছো বন্ধু? আজকে আমি তোমার জন্য গান গাইতে পারি, রিসার্চ করতে পারি বা গল্প শোনাতে পারি!" }));
           },
           onmessage: async (message: LiveServerMessage) => {
-            // Handle grounding info
             if (message.serverContent?.groundingMetadata?.groundingChunks) {
               const chunks = message.serverContent.groundingMetadata.groundingChunks;
               transcriptionsRef.current.chunks = chunks;
               setActiveGrounding(chunks);
             }
 
-            if (message.serverContent?.inputTranscription) transcriptionsRef.current.input += message.serverContent.inputTranscription.text;
-            if (message.serverContent?.outputTranscription) transcriptionsRef.current.output += message.serverContent.outputTranscription.text;
+            if (message.serverContent?.inputTranscription) {
+              const text = message.serverContent.inputTranscription.text;
+              transcriptionsRef.current.input += text;
+            }
+            if (message.serverContent?.outputTranscription) {
+              const text = message.serverContent.outputTranscription.text;
+              transcriptionsRef.current.output += text;
+              // Detect singing intent from output text
+              if (text.includes('গান') || text.includes('গাই')) {
+                setCurrentExpression('singing');
+              }
+            }
             
             if (message.serverContent?.turnComplete) {
               if (transcriptionsRef.current.input) addMessage('user', transcriptionsRef.current.input);
               if (transcriptionsRef.current.output) addMessage('bondhu', transcriptionsRef.current.output, transcriptionsRef.current.chunks);
               transcriptionsRef.current = { input: '', output: '', chunks: [] };
-              // Clear visual grounding after turn
-              setTimeout(() => setActiveGrounding(null), 5000);
+              setTimeout(() => {
+                setActiveGrounding(null);
+                setCurrentExpression('neutral');
+              }, 5000);
             }
 
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
@@ -277,13 +301,19 @@ const App: React.FC = () => {
               source.connect(analyserRef.current!);
               source.addEventListener('ended', () => {
                 sourcesRef.current.delete(source);
-                if (sourcesRef.current.size === 0) setIsBondhuSpeaking(false);
+                if (sourcesRef.current.size === 0) {
+                  setIsBondhuSpeaking(false);
+                  setCurrentExpression('neutral');
+                }
               });
               source.start(nextStartTimeRef.current);
               nextStartTimeRef.current += audioBuffer.duration;
               sourcesRef.current.add(source);
             }
-            if (message.serverContent?.interrupted) stopAllAudio();
+            if (message.serverContent?.interrupted) {
+              stopAllAudio();
+              setCurrentExpression('neutral');
+            }
           },
           onerror: () => setStatus(ConnectionStatus.ERROR),
           onclose: () => setStatus(ConnectionStatus.DISCONNECTED)
@@ -312,7 +342,7 @@ const App: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-black text-gray-900 bengali-font leading-none">Bondhu AI</h2>
-            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">Smart Knowledge Partner</p>
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">Bengali Voice Companion</p>
           </div>
         </div>
         <div className="flex space-x-2">
