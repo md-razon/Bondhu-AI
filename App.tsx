@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
-import { Message, ConnectionStatus, VoiceOption } from './types.ts';
-import { decode, decodeAudioData, createBlob } from './utils/audioUtils.ts';
+import { Message, ConnectionStatus, VoiceOption } from './types';
+import { decode, decodeAudioData, createBlob } from './utils/audioUtils';
 import { 
   MicrophoneIcon, 
   ChatBubbleBottomCenterTextIcon, 
@@ -11,7 +11,8 @@ import {
   GlobeAltIcon,
   LinkIcon,
   BookOpenIcon,
-  MusicalNoteIcon
+  MusicalNoteIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/solid';
 
 const BASE_BONDHU_INSTRUCTION = `
@@ -190,9 +191,6 @@ const App: React.FC = () => {
         analyserRef.current.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
         setMouthValue(Math.min(1, average / 45));
-        
-        // Dynamic expression update if speaking - detect if singing-like patterns are occurring
-        // In a real app we might use prompt signals, here we'll toggle 'singing' if we detect 'গান' in output
       } else {
         setMouthValue(0);
       }
@@ -216,6 +214,11 @@ const App: React.FC = () => {
   }, []);
 
   const startConnection = async (voiceToUse?: string, initialText?: string) => {
+    if (!process.env.API_KEY) {
+      alert("API কী পাওয়া যায়নি। অনুগ্রহ করে সেটিংস চেক করুন।");
+      return;
+    }
+
     try {
       setStatus(ConnectionStatus.CONNECTING);
       const targetVoice = voiceToUse || selectedVoice;
@@ -274,7 +277,6 @@ const App: React.FC = () => {
             if (message.serverContent?.outputTranscription) {
               const text = message.serverContent.outputTranscription.text;
               transcriptionsRef.current.output += text;
-              // Detect singing intent from output text
               if (text.includes('গান') || text.includes('গাই')) {
                 setCurrentExpression('singing');
               }
@@ -333,6 +335,18 @@ const App: React.FC = () => {
     setStatus(ConnectionStatus.DISCONNECTED);
   };
 
+  if (!process.env.API_KEY) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 text-center">
+        <div className="max-w-md p-8 bg-white rounded-3xl shadow-xl border border-rose-100 flex flex-col items-center">
+          <ExclamationTriangleIcon className="w-16 h-16 text-rose-500 mb-6" />
+          <h1 className="text-2xl font-black text-gray-900 bengali-font mb-4">API কী খুঁজে পাওয়া যায়নি</h1>
+          <p className="text-gray-600 bengali-font">অ্যাপটি চালানোর জন্য একটি Google Gemini API কী প্রয়োজন। অনুগ্রহ করে সেটিংস থেকে কী যোগ করুন।</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#fcfcfc] p-4 md:p-6 font-sans">
       <header className="w-full max-w-lg flex justify-between items-center mb-6">
@@ -360,6 +374,12 @@ const App: React.FC = () => {
       </div>
 
       <main className="flex-1 w-full max-w-lg flex flex-col items-center justify-center">
+        {status === ConnectionStatus.ERROR && (
+          <div className="mb-6 bg-rose-50 border border-rose-100 rounded-2xl px-4 py-2 text-rose-600 text-xs font-bold bengali-font">
+            সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।
+          </div>
+        )}
+        
         {activeGrounding && (
           <div className="mb-6 bg-white/80 backdrop-blur shadow-sm border border-emerald-100 rounded-2xl px-4 py-2 flex items-center space-x-2 anime-entry z-30">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -376,7 +396,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <button onClick={status === ConnectionStatus.CONNECTED ? disconnect : () => startConnection()} className={`w-24 h-24 rounded-[36px] flex items-center justify-center transition-all shadow-2xl active:scale-90 z-20 ${status === ConnectionStatus.CONNECTED ? 'bg-rose-500 text-white rotate-90' : 'bg-emerald-500 text-white'}`}>
+        <button onClick={status === ConnectionStatus.CONNECTED ? disconnect : () => startConnection()} className={`w-24 h-24 rounded-[36px] flex items-center justify-center transition-all shadow-2xl active:scale-90 z-20 ${status === ConnectionStatus.CONNECTED ? 'bg-rose-500 text-white rotate-90' : 'bg-emerald-500 text-white'} ${status === ConnectionStatus.CONNECTING ? 'animate-pulse opacity-70 cursor-wait' : ''}`}>
           {status === ConnectionStatus.CONNECTED ? <XMarkIcon className="w-10 h-10" /> : <MicrophoneIcon className="w-10 h-10" />}
         </button>
 
