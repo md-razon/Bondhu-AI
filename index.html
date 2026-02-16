@@ -3,8 +3,28 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bondhu AI - Expressive Bengali Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#059669">
+    
+    <!-- Primary Meta Tags -->
+    <title>Bondhu AI - Your Bengali AI Friend</title>
+    <meta name="title" content="Bondhu AI - Your Bengali AI Friend">
+    <meta name="description" content="Talk to Bondhu, your empathetic Bengali AI companion. Real-time voice chat, songs, and research in Bangla.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bondhu-ai.vercel.app/">
+    <meta property="og:title" content="Bondhu AI - Your Bengali AI Friend">
+    <meta property="og:description" content="Talk to Bondhu, your empathetic Bengali AI companion. Real-time voice chat, songs, and research in Bangla.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/google/material-design-icons/master/png/social/person/lg/2x/baseline_person_black_48dp.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Bondhu AI - Your Bengali AI Friend">
+    <meta property="twitter:description" content="Talk to Bondhu, your empathetic Bengali AI companion. Real-time voice chat, songs, and research in Bangla.">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +34,8 @@
             font-family: 'Inter', 'Hind Siliguri', sans-serif;
             background-color: #fafafa;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            overscroll-behavior-y: contain;
         }
         .bengali-font {
             font-family: 'Hind Siliguri', sans-serif;
@@ -34,17 +56,6 @@
         }
         .animate-blink {
             animation: blink 4s infinite;
-            transform-origin: center top;
-        }
-
-        @keyframes lip-sync {
-            0%, 100% { transform: scaleY(0.4) scaleX(0.9); }
-            25% { transform: scaleY(1.3) scaleX(1.1); }
-            50% { transform: scaleY(0.8) scaleX(0.8); }
-            75% { transform: scaleY(1.1) scaleX(1.05); }
-        }
-        .animate-lip-sync {
-            animation: lip-sync 0.16s infinite;
             transform-origin: center top;
         }
 
@@ -74,15 +85,6 @@
             animation: float-note-2 2.5s linear infinite;
         }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
-        }
-        .animate-shake {
-            animation: shake 0.3s ease-in-out infinite;
-        }
-
         @keyframes entry {
             from { opacity: 0; transform: translateY(15px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
@@ -93,6 +95,14 @@
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 640px) {
+            .mobile-safe-area {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
     </style>
 <script type="importmap">
 {
@@ -101,12 +111,13 @@
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/"
+    "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
+    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^8.1.0"
   }
 }
 </script>
 </head>
-<body>
+<body class="mobile-safe-area">
     <div id="root"></div>
 </body>
 </html>
