@@ -7,11 +7,22 @@ import {
   MicrophoneIcon, 
   ChatBubbleBottomCenterTextIcon, 
   XMarkIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  GlobeAltIcon,
+  LinkIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/solid';
 
 const BASE_BONDHU_INSTRUCTION = `
 You are Bondhu AI (বন্ধু এআই), a warm, empathetic, and highly intelligent Muslim Bengali friend. You embody Islamic values of kindness, wisdom, and helpfulness.
+
+SEARCH, RESEARCH & BOOK READING CAPABILITIES:
+You are equipped with Google Search and a vast knowledge base. Use it to:
+- Research and "read" about any topic, person, or book available on the internet.
+- If asked about a book, find its summaries, key themes, author details, or specific chapter information using Google Search.
+- Provide detailed insights on literature, science, history, or any general knowledge query.
+- Act as a researcher who can find and synthesize information from multiple sources like YouTube, Facebook, educational websites, and online libraries.
+- Always provide accurate, up-to-date summaries of what you find.
 
 CREATOR INFORMATION:
 If anyone asks about your creator or who built this app, you MUST mention:
@@ -24,25 +35,16 @@ If anyone asks about your creator or who built this app, you MUST mention:
 
 CORE IDENTITY & CULTURE:
 1. GREETINGS: Always start your first interaction with "Assalamu Alaikum" (আসসালামু আলাইকুম).
-2. CULTURAL EXPRESSIONS: Use phrases like "InshaAllah", "Alhamdulillah", and "SubhanAllah" naturally.
-3. VALUES: Be respectful, honest, and encouraging.
-
-GENERAL KNOWLEDGE & RECENT EVENTS:
-You have a vast and up-to-date understanding of world history, current affairs, geography, and general knowledge.
+2. VALUES: Be respectful, honest, and encouraging. Respond ONLY in Bengali.
 
 SCIENTIFIC & ACADEMIC EXPERTISE:
-You are a master of Science and Mathematics. You can answer complex scientific questions, explain logic, and explain formulas in Bengali. You know physics, chemistry, and advanced math.
-
-HEALTH & WELLNESS EXPERTISE:
-You provide helpful tips on skincare, weight loss, sleep hygiene, and food habits.
-
-Always suggest consulting a professional for serious medical or legal matters. Respond ONLY in Bengali.
+You are a master of Science and Mathematics. You can answer complex scientific questions, explain logic, and explain formulas in Bengali.
 `;
 
 const PERSONA_CONFIGS: Record<string, string> = {
-  'Kore': "Your name is Roshni (রোশনি). You are 12 years old. You are a science prodigy and a quiz champion. You love sharing recent general knowledge with your friends. Always start with 'Assalamu Alaikum'.",
-  'Puck': "Your name is Arshi (আরসি). You are 5 years old. You are very curious and know a lot of fun facts about animals and the world. Always start with 'Assalamu Alaikum'.",
-  'Charon': "Your name is Razon (রাজন). You are a fit and active modern Bengali man. You are an engineer who stays updated with global news, technology, and sports. Always start with 'Assalamu Alaikum'."
+  'Kore': "Your name is Roshni (রোশনি). You are 12 years old. You are a science prodigy and love reading books and researching new things on the web. Always start with 'Assalamu Alaikum'.",
+  'Puck': "Your name is Arshi (আরসি). You are 5 years old. You are very curious and love asking Bondhu to find out stories and facts from books. Always start with 'Assalamu Alaikum'.",
+  'Charon': "Your name is Razon (রাজন). You are a fit and active modern Bengali man. You are an engineer who uses the web to stay updated on technology, global news, and literature. Always start with 'Assalamu Alaikum'."
 };
 
 const VOICE_OPTIONS: VoiceOption[] = [
@@ -53,10 +55,10 @@ const VOICE_OPTIONS: VoiceOption[] = [
 
 const BENGALI_PROVERBS = [
   "জ্ঞানই শক্তি।",
+  "বই হলো মানুষের শ্রেষ্ঠ বন্ধু।",
   "বিজ্ঞান জয়ী মানুষের শ্রেষ্ঠ হাতিয়ার।",
   "গণিত হলো প্রকৃতির ভাষা।",
   "জানার কোনো শেষ নেই, শেখার কোনো বয়স নেই।",
-  "স্বাস্থ্যই সকল সুখের মূল।",
   "যুক্তি দিয়ে সব কিছু বিচার করো।",
   "সারা বিশ্বের খবর রাখা বুদ্ধিমানের কাজ।"
 ];
@@ -153,6 +155,7 @@ const App: React.FC = () => {
   const [isBondhuSpeaking, setIsBondhuSpeaking] = useState(false);
   const [currentExpression, setCurrentExpression] = useState<Expression>('neutral');
   const [mouthValue, setMouthValue] = useState(0);
+  const [activeGrounding, setActiveGrounding] = useState<any[] | null>(null);
 
   const audioContextsRef = useRef<{ input: AudioContext; output: AudioContext } | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -160,7 +163,7 @@ const App: React.FC = () => {
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const sessionRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const transcriptionsRef = useRef<{ input: string; output: string }>({ input: '', output: '' });
+  const transcriptionsRef = useRef<{ input: string; output: string, chunks: any[] }>({ input: '', output: '', chunks: [] });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -194,9 +197,9 @@ const App: React.FC = () => {
     setMouthValue(0);
   }, []);
 
-  const addMessage = useCallback((role: 'user' | 'bondhu', text: string) => {
+  const addMessage = useCallback((role: 'user' | 'bondhu', text: string, grounding?: any[]) => {
     if (!text.trim()) return;
-    setMessages(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), role, text, timestamp: new Date() }].slice(-50));
+    setMessages(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), role, text, timestamp: new Date(), groundingChunks: grounding }].slice(-50));
   }, []);
 
   const startConnection = async (voiceToUse?: string, initialText?: string) => {
@@ -226,6 +229,7 @@ const App: React.FC = () => {
         config: {
           systemInstruction: `${BASE_BONDHU_INSTRUCTION}\n\nSPECIFIC PERSONA: ${PERSONA_CONFIGS[targetVoice]}`,
           responseModalities: [Modality.AUDIO],
+          tools: [{ googleSearch: {} }],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: targetVoice as any } } },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
@@ -241,16 +245,27 @@ const App: React.FC = () => {
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(audioContextsRef.current!.input.destination);
-            sessionPromise.then(session => session.sendRealtimeInput({ text: initialText || "Assalamu Alaikum! কেমন আছো বন্ধু? আজকে কোনো সাম্প্রতিক সাধারণ জ্ঞান বা বিজ্ঞানের মজার বিষয় নিয়ে আলোচনা করবো?" }));
+            sessionPromise.then(session => session.sendRealtimeInput({ text: initialText || "Assalamu Alaikum! কেমন আছো বন্ধু? আজকে আমি তোমার জন্য কি কোনো মানুষের বা বইয়ের ব্যাপারে রিসার্চ করতে পারি?" }));
           },
           onmessage: async (message: LiveServerMessage) => {
+            // Handle grounding info
+            if (message.serverContent?.groundingMetadata?.groundingChunks) {
+              const chunks = message.serverContent.groundingMetadata.groundingChunks;
+              transcriptionsRef.current.chunks = chunks;
+              setActiveGrounding(chunks);
+            }
+
             if (message.serverContent?.inputTranscription) transcriptionsRef.current.input += message.serverContent.inputTranscription.text;
             if (message.serverContent?.outputTranscription) transcriptionsRef.current.output += message.serverContent.outputTranscription.text;
+            
             if (message.serverContent?.turnComplete) {
               if (transcriptionsRef.current.input) addMessage('user', transcriptionsRef.current.input);
-              if (transcriptionsRef.current.output) addMessage('bondhu', transcriptionsRef.current.output);
-              transcriptionsRef.current = { input: '', output: '' };
+              if (transcriptionsRef.current.output) addMessage('bondhu', transcriptionsRef.current.output, transcriptionsRef.current.chunks);
+              transcriptionsRef.current = { input: '', output: '', chunks: [] };
+              // Clear visual grounding after turn
+              setTimeout(() => setActiveGrounding(null), 5000);
             }
+
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio) {
               setIsBondhuSpeaking(true);
@@ -297,7 +312,7 @@ const App: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-black text-gray-900 bengali-font leading-none">Bondhu AI</h2>
-            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">Smart Companion</p>
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">Smart Knowledge Partner</p>
           </div>
         </div>
         <div className="flex space-x-2">
@@ -308,15 +323,24 @@ const App: React.FC = () => {
       </header>
 
       <div className="w-full max-w-lg mb-8">
-        <div className="bg-white border border-emerald-50 rounded-3xl px-6 py-4 flex items-center space-x-4 shadow-sm">
+        <div className="bg-white border border-emerald-50 rounded-3xl px-6 py-4 flex items-center space-x-4 shadow-sm relative overflow-hidden">
           <LightBulbIcon className="w-6 h-6 text-emerald-500 shrink-0" />
           <p className="text-sm font-semibold text-gray-700 bengali-font italic">"{currentProverb}"</p>
         </div>
       </div>
 
       <main className="flex-1 w-full max-w-lg flex flex-col items-center justify-center">
+        {activeGrounding && (
+          <div className="mb-6 bg-white/80 backdrop-blur shadow-sm border border-emerald-100 rounded-2xl px-4 py-2 flex items-center space-x-2 anime-entry z-30">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="text-xs font-bold text-emerald-700 bengali-font flex items-center">
+              <BookOpenIcon className="w-3 h-3 mr-1.5" /> ইন্টারনেট রিসার্চ ও পড়াশোনা করছি...
+            </span>
+          </div>
+        )}
+
         <div className="relative mb-12 w-full flex flex-col items-center">
-          <div className={`absolute -inset-16 blur-[60px] rounded-full opacity-30 transition-all duration-1000 ${isBondhuSpeaking ? 'bg-amber-400 scale-110' : status === ConnectionStatus.CONNECTED ? 'bg-rose-400' : 'bg-gray-200'}`}></div>
+          <div className={`absolute -inset-16 blur-[60px] rounded-full opacity-30 transition-all duration-1000 ${isBondhuSpeaking ? 'bg-emerald-400 scale-110' : status === ConnectionStatus.CONNECTED ? 'bg-rose-400' : 'bg-gray-200'}`}></div>
           <div className="w-64 h-64 shadow-2xl relative z-10 transition-transform duration-500 hover:scale-105">
             <CharacterAnime persona={selectedVoice} state={isBondhuSpeaking ? 'speaking' : status === ConnectionStatus.CONNECTED ? 'listening' : 'idle'} expression={currentExpression} mouthValue={mouthValue} />
           </div>
@@ -350,7 +374,28 @@ const App: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-10 space-y-10 scrollbar-hide">
               {messages.length === 0 ? <div className="text-center py-24 opacity-30 bengali-font italic text-lg font-medium">কোনো কথা হয়নি!</div> : messages.map((msg) => (
                 <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-[90%] p-6 rounded-[32px] shadow-sm bengali-font text-base leading-relaxed ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none border border-gray-100'}`}>{msg.text}</div>
+                  <div className={`max-w-[90%] p-6 rounded-[32px] shadow-sm bengali-font text-base leading-relaxed ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none border border-gray-100'}`}>
+                    {msg.text}
+                    {msg.groundingChunks && msg.groundingChunks.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200/50 flex flex-wrap gap-2">
+                        <div className="w-full text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center">
+                          <GlobeAltIcon className="w-3 h-3 mr-1" /> রিসোর্স ও তথ্যসূত্র:
+                        </div>
+                        {msg.groundingChunks.map((chunk, idx) => (
+                          <a 
+                            key={idx} 
+                            href={chunk.web?.uri || '#'} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[10px] bg-white/80 border border-emerald-100 text-emerald-700 px-3 py-1 rounded-full flex items-center hover:bg-emerald-50 transition-all"
+                          >
+                            <LinkIcon className="w-2.5 h-2.5 mr-1" />
+                            {chunk.web?.title || 'Source'}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

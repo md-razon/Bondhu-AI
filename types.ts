@@ -4,6 +4,7 @@ export interface Message {
   role: 'user' | 'bondhu';
   text: string;
   timestamp: Date;
+  groundingChunks?: any[];
 }
 
 export enum ConnectionStatus {
