@@ -1,0 +1,7 @@
+{
+  "name": "Bondhu AI - Your Bengali AI Friend",
+  "description": "A warm and friendly Bengali-speaking AI companion for real-time voice conversations, providing support, companionship, and helpful dialogue in Bangla.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
